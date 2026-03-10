@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes, createHash, randomInt } from 'crypto';
 import { UsersRepository } from '../users/users.repository';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AuthRepository } from './auth.repository';
 
 const hashToken = (value: string): string =>
@@ -48,6 +49,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly authRepository: AuthRepository,
     private readonly usersRepository: UsersRepository,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async requestOtp(emailRaw: string): Promise<{ ok: true }> {
@@ -70,6 +72,16 @@ export class AuthService {
     const nodeEnv = this.configService.get<string>('NODE_ENV') ?? 'development';
     if (nodeEnv === 'development') {
       this.logger.log(`DEV OTP for ${email}: ${code}`);
+    }
+
+    try {
+      await this.notificationsService.sendAuthOtpEmail({
+        email,
+        code,
+        ttlMinutes: Math.max(1, ttlMinutes),
+      });
+    } catch (error) {
+      this.logger.error(error, 'Failed to send OTP notification');
     }
 
     return { ok: true };
@@ -97,7 +109,16 @@ export class AuthService {
 
     await this.authRepository.consumeOtpChallenge(String(challenge._id), now);
 
-    const user = await this.usersRepository.createIfMissing(email);
+    const { user, createdNew } =
+      await this.usersRepository.createIfMissing(email);
+
+    if (createdNew) {
+      try {
+        await this.notificationsService.sendWelcomeEmail({ email: user.email });
+      } catch (error) {
+        this.logger.error(error, 'Failed to send welcome email');
+      }
+    }
 
     const jwtExpiresIn =
       this.configService.get<string>('JWT_ACCESS_EXPIRES_IN') ??

@@ -13,17 +13,21 @@ export class UsersRepository {
     return this.userModel.findOne({ email }).exec();
   }
 
-  async createIfMissing(email: string): Promise<UserDocument> {
+  async createIfMissing(email: string): Promise<{
+    user: UserDocument;
+    createdNew: boolean;
+  }> {
     const normalizedEmail = email.trim().toLowerCase();
 
     const existing = await this.findByEmail(normalizedEmail);
-    if (existing) return existing;
+    if (existing) return { user: existing, createdNew: false };
 
     try {
-      return await this.userModel.create({ email: normalizedEmail });
+      const user = await this.userModel.create({ email: normalizedEmail });
+      return { user, createdNew: true };
     } catch {
       const raced = await this.findByEmail(normalizedEmail);
-      if (raced) return raced;
+      if (raced) return { user: raced, createdNew: false };
       throw new Error('Failed to create user');
     }
   }

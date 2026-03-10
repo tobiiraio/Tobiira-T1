@@ -3,9 +3,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from '../users/users.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthController } from './auth.controller';
 import { AuthRepository } from './auth.repository';
 import { AuthService } from './auth.service';
+import { JwtAccessGuard } from './guards/jwt-access.guard';
 import {
   OtpChallenge,
   OtpChallengeSchema,
@@ -19,6 +21,7 @@ import { Session, SessionSchema } from './schemas/session.schema';
 @Module({
   imports: [
     UsersModule,
+    NotificationsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -39,6 +42,7 @@ import { Session, SessionSchema } from './schemas/session.schema';
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthRepository, AuthService],
+  providers: [AuthRepository, AuthService, JwtAccessGuard],
+  exports: [AuthService, JwtAccessGuard],
 })
 export class AuthModule {}
