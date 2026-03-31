@@ -1,5 +1,5 @@
 import { renderBaseEmailTemplate } from './base-email.template';
-import type { MembershipRole } from '../../../roles/membership-role';
+import type { MembershipRole } from '@tobiira/common';
 
 type OrganizationInviteEmailParams = {
   appName: string;

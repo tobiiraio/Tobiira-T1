@@ -14,54 +14,54 @@ export type CoreEvent = (typeof CoreEvents)[keyof typeof CoreEvents];
 
 // --- Payloads ---
 
-export type OtpRequestedPayload = {
+export interface OtpRequestedPayload {
   email: string;
   code: string;
   ttlMinutes: number;
-};
+}
 
-export type UserCreatedPayload = {
+export interface UserCreatedPayload {
   userId: string;
   email: string;
-};
+}
 
-export type OrgCreatedPayload = {
+export interface OrgCreatedPayload {
   organizationId: string;
   organizationName: string;
   ownerEmail: string;
-};
+}
 
-export type MembershipInvitedPayload = {
+export interface MembershipInvitedPayload {
   email: string;
   organizationId: string;
   role: string;
   token: string;
   expiresAt: string;
-};
+}
 
-export type MembershipCreatedPayload = {
+export interface MembershipCreatedPayload {
   userId: string;
   organizationId: string;
   role: string;
-};
+}
 
-export type MembershipRemovedPayload = {
+export interface MembershipRemovedPayload {
   userId: string;
   organizationId: string;
-};
+}
 
-export type JoinRequestReceivedPayload = {
+export interface JoinRequestReceivedPayload {
   requestId: string;
   organizationId: string;
   userEmail: string;
   ownerEmail: string;
   organizationName: string;
   message?: string;
-};
+}
 
-export type JoinRequestResolvedPayload = {
+export interface JoinRequestResolvedPayload {
   requestId: string;
   organizationId: string;
   userEmail: string;
   decision: 'approved' | 'rejected';
-};
+}

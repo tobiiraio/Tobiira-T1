@@ -8,7 +8,7 @@ export const PerstaEvents = {
 
 export type PerstaEvent = (typeof PerstaEvents)[keyof typeof PerstaEvents];
 
-export type TenantEnrolledPayload = {
+export interface TenantEnrolledPayload {
   tenantId: string;
   userId: string;
   email: string;
@@ -16,9 +16,9 @@ export type TenantEnrolledPayload = {
   lastName?: string;
   organizationId: string;
   organizationName: string;
-};
+}
 
-export type LeaseCreatedPayload = {
+export interface LeaseCreatedPayload {
   leaseId: string;
   tenantEmail: string;
   unitName: string;
@@ -29,9 +29,9 @@ export type LeaseCreatedPayload = {
   rentAmount: number;
   currency: string;
   paymentFrequency: string;
-};
+}
 
-export type LeaseActivatedPayload = {
+export interface LeaseActivatedPayload {
   leaseId: string;
   tenantEmail: string;
   unitName: string;
@@ -41,9 +41,9 @@ export type LeaseActivatedPayload = {
   endDate: string;
   rentAmount: number;
   currency: string;
-};
+}
 
-export type LeaseTerminatedPayload = {
+export interface LeaseTerminatedPayload {
   leaseId: string;
   tenantEmail: string;
   unitName: string;
@@ -51,9 +51,9 @@ export type LeaseTerminatedPayload = {
   organizationName: string;
   terminatedAt: string;
   reason?: string;
-};
+}
 
-export type LeaseRenewedPayload = {
+export interface LeaseRenewedPayload {
   leaseId: string;
   tenantEmail: string;
   unitName: string;
@@ -62,4 +62,4 @@ export type LeaseRenewedPayload = {
   newEndDate: string;
   rentAmount: number;
   currency: string;
-};
+}
