@@ -24,6 +24,7 @@ export class OrganizationsService {
     name: string;
     address?: string;
     location?: { lat: number; lng: number };
+    plan: { featureFlags: string[]; billingRef: string | null };
     role: MembershipRole;
   }> {
     const organization = await this.organizationsRepository.create({
