@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ClientRmq } from '@nestjs/microservices';
+import { ClientRMQ as ClientRmq } from '@nestjs/microservices';
 import type { PerstaEvent } from '@tobiira/common';
 import { RABBITMQ_CLIENT } from './rabbitmq.module';
 

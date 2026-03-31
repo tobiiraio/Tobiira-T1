@@ -226,7 +226,7 @@ export class MembershipsService {
     organizationId: string;
     resolvedByUserId: string;
     decision: 'approved' | 'rejected';
-  }): Promise<{ id: string; status: string }> {
+  }): Promise<{ id: string; status: string; userEmail: string }> {
     const request = await this.joinRequestsRepository.findById(params.requestId);
     if (!request || String(request.organizationId) !== params.organizationId) {
       throw new NotFoundException('Join request not found');

@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ClientRmq } from '@nestjs/microservices';
+import { ClientRMQ as ClientRmq } from '@nestjs/microservices';
 import { PdfService } from '../pdf/pdf.service';
 import { PerstaClientService } from '../internal-clients/persta-client.service';
 import { PaymentsClientService } from '../internal-clients/payments-client.service';
