@@ -1,903 +1,326 @@
-Save this as `ARCHITECTURE.md` in the root of `tobiira-api`.
+# Tobiira Backend Architecture
 
-````md
-# Tobiira API Architecture
+## Repository Structure
 
-## Overview
+NestJS monorepo (`nest-cli.json`, `monorepo: true`). One repository, one `package.json`, shared `node_modules`, independent deployable services under `apps/`.
 
-Tobiira is a spatial data and AI platform for operating real-world spaces.
-
-The platform captures structured operational data from physical environments such as:
-
-- residential properties
-- hospitality spaces
-- commercial spaces
-- restaurants
-
-This data is intended to become the foundation for future spatial intelligence, automation, analytics, and AI systems.
-
-The backend currently serves the core platform and selected product verticals.
-
----
-
-## Current Backend Scope
-
-This backend is a **NestJS modular monolith**.
-
-Repository:
-
-```text
-tobiira-api
-````
-
-Primary deployment target:
-
-```text
-api.tobiira.io
 ```
-
-Current module groups:
-
-* `core`
-* `persta`
-* `testa`
-
-Future product domains may include:
-
-* `costa`
-* `lumi`
-
----
-
-## Product Vision
-
-Tobiira is not positioned only as property management software.
-
-Tobiira is positioned as a:
-
-**Spatial data and AI platform for operating real-world spaces.**
-
-Product verticals act as operational data layers.
-
-### Persta
-
-Residential and long-stay operations.
-
-Examples:
-
-* apartments
-* villas
-* standalones
-* hostels
-* rental blocks
-
-### Testa
-
-Hospitality and short-stay accommodation operations.
-
-Examples:
-
-* hotels
-* inns
-* lodges
-* guest houses
-* serviced spaces
-
-### Costa
-
-Commercial property operations.
-
-Examples:
-
-* malls
-* plazas
-* complexes
-* offices
-* shops
-
-### Lumi
-
-Restaurant operations and device ecosystem.
-
-Examples:
-
-* tables
-* zones
-* branches
-* devices
-* staff request flows
-
----
-
-## Architectural Style
-
-The backend uses a **modular monolith**.
-
-### Why
-
-* simple to operate as a solo builder
-* fast to build and iterate
-* clear domain boundaries
-* easier to split later if needed
-* good fit for NestJS
-
-### What this means
-
-* one backend repo
-* one backend application
-* separate domain modules inside the application
-* clear dependency rules between domains
-
----
-
-## Technology Choices
-
-### Backend Framework
-
-* NestJS
-
-### Database
-
-* MongoDB
-
-### API Style
-
-* HTTP REST API
-
-### Auth Model
-
-* email OTP
-* session-based auth
-* secure cookie support across subdomains later
-
----
-
-## Frontend and Platform Context
-
-The backend supports multiple frontend applications.
-
-### Frontends
-
-* `id.tobiira.io`
-* `persta.tobiira.io`
-* `testa.tobiira.io`
-* future: `costa.tobiira.io`
-* future: `lumi.tobiira.io`
-
-### Main website
-
-* `tobiira.io`
-
-### Identity frontend
-
-* `id.tobiira.io`
-
-This backend is responsible for powering shared data and business logic.
-
----
-
-## High-Level Backend Structure
-
-```text
-src/
-  modules/
-    core/
-    persta/
-    testa/
-  common/
-  config/
-  database/
-  app.module.ts
-  main.ts
+tobiira-t1/
+  apps/
+    core/           # Auth, users, organizations, memberships
+    notifications/  # Email delivery — RabbitMQ consumer only
+    documents/      # PDF generation — event-driven + on-demand HTTP
+    payments/       # Vertical-agnostic payment recording
+    persta/         # Property management vertical
+  libs/
+    common/         # Shared types, event names, DTOs, constants
+  kong/
+    kong.yml        # Declarative Kong gateway config (DB-less)
+  Dockerfile        # Single multi-stage build — ARG APP selects service
+  docker-compose.yml
+  .github/workflows/ci.yml
 ```
 
 ---
 
-## Module Groups
+## Services
 
-## 1. Core
+### Platform (60xx)
 
-The `core` group contains platform-wide shared capabilities.
+| Service | Port | Role |
+|---------|------|------|
+| core | 6000 | Auth, users, organizations, memberships |
+| notifications | 6001 | Transactional email via Brevo |
+| documents | 6002 | PDF generation, on-demand streaming |
+| payments | 6003 | Payment recording and voiding |
 
-```text
-src/modules/core/
-  auth/
-  users/
-  organizations/
-  memberships/
-  roles/
-  notifications/
-  documents/
-```
+### Verticals (70xx)
 
-### Responsibilities
-
-#### auth
-
-Handles:
-
-* request OTP
-* verify OTP
-* create session
-* logout
-* current session lookup
-
-#### users
-
-Handles:
-
-* user profile
-* basic identity data
-* account metadata
-
-#### organizations
-
-Handles:
-
-* organization creation
-* organization management
-* workspace/business container
-
-#### memberships
-
-Handles:
-
-* linking users to organizations
-* invitation and membership lifecycle
-* organization access relationships
-
-#### roles
-
-Handles:
-
-* owner
-* operator
-* occupant
-* permission checks
-* access rules
-
-#### notifications
-
-Handles:
-
-* OTP delivery
-* invitations
-* receipts
-* alerts
-* future messaging channels
-
-#### documents
-
-Handles:
-
-* document generation
-* receipts
-* invoices
-* agreements
-* PDF rendering
+| Service | Port | Role |
+|---------|------|------|
+| persta | 7000 | Residential property management |
+| testa | 7001 | Hospitality _(planned)_ |
+| lumi | 7002 | Restaurant / smart building _(planned)_ |
+| costa | 7003 | Commercial property _(planned)_ |
 
 ---
 
-## 2. Persta
+## Technology Stack
 
-The `persta` group contains long-stay and residential operations.
-
-```text
-src/modules/persta/
-  properties/
-  blocks/
-  units/
-  tenants/
-  leases/
-  rent/
-  maintenance/
-```
-
-### Responsibilities
-
-#### properties
-
-* property creation
-* property metadata
-* organization ownership
-
-#### blocks
-
-* building-level structure under a property
-
-#### units
-
-* occupiable or rentable spaces inside a block
-
-#### tenants
-
-* long-stay occupants
-* tenant profiles
-
-#### leases
-
-* lease lifecycle
-* agreements
-* occupancy periods
-
-#### rent
-
-* charges
-* payments
-* rent tracking
-
-#### maintenance
-
-* issues
-* assignments
-* repairs
-* status tracking
+| Concern | Choice |
+|---------|--------|
+| Framework | NestJS 11 |
+| Language | TypeScript 5 |
+| Database | MongoDB Atlas — separate cluster DB per service |
+| ODM | Mongoose 9 (`@nestjs/mongoose`) |
+| Message broker | RabbitMQ — `@nestjs/microservices` Transport.RMQ |
+| API gateway | Kong 3.7 — declarative DB-less mode |
+| Email | Brevo (transactional, attachment support) |
+| PDF | pdfkit — in-memory generation, never stored |
+| HTTP client | `@nestjs/axios` / `axios` — internal service-to-service calls |
+| Auth | Email OTP → JWT access token (15m) + refresh token (30d rotation) |
+| Validation | `class-validator` + `class-transformer` on all DTOs |
+| Shared lib | `@tobiira/common` — events, constants, shared DTOs |
+| File storage | Cloudflare R2 / S3-compatible _(wired, Phase 2 only)_ |
 
 ---
 
-## 3. Testa
+## API Gateway — Kong
 
-The `testa` group contains short-stay accommodation operations.
+All client traffic enters on port `8000`. Kong handles:
 
-```text
-src/modules/testa/
-  properties/
-  blocks/
-  units/
-  reservations/
-  guests/
-  rates/
-  operations/
+- **JWT validation** on protected routes (`exp` claim)
+- **Header injection** — extracts `sub` and `email` from JWT, injects `x-user-id`, `x-user-email`, `x-org-id` into upstream requests
+- **CORS** — global, all HTTP methods
+- **Rate limiting** — 120 req/min (local policy)
+
+Route table:
+
+```
+/api/v1/auth           → core:6000          (public)
+/api/v1/users          → core:6000          (JWT required)
+/api/v1/organizations  → core:6000          (JWT required)
+/api/v1/memberships    → core:6000          (JWT required)
+/api/v1/payments       → payments:6003      (JWT + header injection)
+/api/v1/documents      → documents:6002     (JWT + header injection)
+/api/v1/properties     → persta:7000        (JWT + header injection)
+/api/v1/leases         → persta:7000        (JWT + header injection)
+/api/v1/tenants        → persta:7000        (JWT + header injection)
 ```
 
-### Responsibilities
-
-#### properties
-
-* hospitality property management
-
-#### blocks
-
-* buildings, wings, or towers
-
-#### units
-
-* rooms, suites, or other stay spaces
-
-#### reservations
-
-* booking lifecycle
-* date-based stays
-
-#### guests
-
-* guest profiles
-* booking-linked identities
-
-#### rates
-
-* pricing and room rate logic
-
-#### operations
-
-* check-in
-* check-out
-* stay operations
+Notifications has no Kong route — not HTTP-addressable by clients.
 
 ---
 
-## Future Module Groups
+## Authentication Flow
 
-These are not part of the current implementation target, but the architecture should not block them.
+```
+POST /auth/request-otp   → core stores hashed OTP, emits core.auth.otp_requested
+                         ← notifications sends OTP email
 
-## Costa
+POST /auth/verify-otp    → core verifies hash, upserts user, issues JWT pair
+                         ← { accessToken, refreshToken }
 
-Commercial operations.
+POST /auth/refresh       → core rotates refresh token, issues new JWT pair
 
-Likely future modules:
-
-```text
-src/modules/costa/
-  properties/
-  blocks/
-  units/
-  occupants/
-  leases/
-  operations/
+GET  /auth/session       → core validates access token, returns { userId, email }
 ```
 
-## Lumi
-
-Restaurant operations and devices.
-
-Likely future modules:
-
-```text
-src/modules/lumi/
-  branches/
-  zones/
-  tables/
-  devices/
-  requests/
-  operations/
-```
+Verticals never re-validate JWTs. They read `x-user-id`, `x-user-email`, `x-org-id` from Kong-injected headers via `GatewayAuthGuard`.
 
 ---
 
-## Spatial Data Model
+## Service-to-Service Communication
 
-Tobiira is fundamentally built around structured spatial modeling.
+### RabbitMQ (async, preferred)
 
-A generalized hierarchy:
+| Queue | Publisher | Consumers |
+|-------|-----------|-----------|
+| `notifications.core` | core | notifications |
+| `notifications.persta` | persta | notifications, documents |
+| `notifications.payments` | payments | notifications, documents |
+| `documents.events` | documents | notifications |
 
-```text
-Organization
-  -> Property
-    -> Block
-      -> Unit
-```
+### Internal HTTP (sync, for data reads)
 
-This hierarchy may map differently by vertical:
+Protected by `x-internal-api-key` header (`InternalApiKeyGuard`). Never routed through Kong.
 
-### Persta
+| Caller | Endpoint | Purpose |
+|--------|----------|---------|
+| persta | `core GET /users/:id` | Resolve user profile on tenant enrol |
+| persta | `core GET /organizations/:id/internal` | Resolve org name |
+| persta | `core POST /memberships/internal` | Create occupant membership |
+| documents | `persta GET /leases/:id/internal` | Full lease record for PDF |
+| documents | `payments GET /payments/:id/internal` | Full payment record for receipt |
 
-```text
-Organization
-  -> Property
-    -> Block
-      -> Unit
-        -> Tenant
-```
-
-### Testa
-
-```text
-Organization
-  -> Property
-    -> Block
-      -> Unit
-        -> Reservation
-          -> Guest
-```
-
-### Costa
-
-```text
-Organization
-  -> Property
-    -> Block
-      -> Unit
-        -> Occupant
-```
-
-### Lumi
-
-```text
-Organization
-  -> Branch
-    -> Zone
-      -> Table
-        -> Device
-```
-
-This structured model is important because it becomes a future **spatial data layer** for AI systems.
+Service base URLs are configured via env vars: `CORE_SERVICE_URL`, `PERSTA_SERVICE_URL`, `PAYMENTS_SERVICE_URL`.
 
 ---
 
-## Domain Dependency Rules
+## Guard Layers
 
-These dependency rules must be preserved.
-
-### Allowed
-
-```text
-persta -> core
-testa  -> core
-future costa -> core
-future lumi  -> core
-```
-
-### Not Allowed
-
-```text
-persta -> testa
-testa  -> persta
-persta -> future costa
-testa  -> future lumi
-```
-
-### Rule
-
-Domains must not depend on each other directly.
-
-All shared logic should live in `core`.
+| Guard | Used in | Mechanism |
+|-------|---------|-----------|
+| `JwtAccessGuard` | core | Validates Bearer JWT directly |
+| `GatewayAuthGuard` | persta, payments, documents | Reads Kong-injected `x-user-id`, `x-org-id` headers |
+| `InternalApiKeyGuard` | all services (internal endpoints) | Validates `x-internal-api-key` header |
+| `OrganizationMembershipGuard` | core | Verifies user has a membership in the target org |
+| `MembershipRolesGuard` | core | Checks `@RequireMembershipRoles(...)` against membership |
 
 ---
 
-## Module Design Pattern
+## Authorization Model
 
-Each module should follow a simple NestJS structure.
+Membership roles within an organization:
 
-Example:
-
-```text
-src/modules/core/auth/
-  auth.module.ts
-  auth.controller.ts
-  auth.service.ts
-  auth.repository.ts
-  dto/
-  schemas/
+```
+owner     — full control, cannot be removed
+operator  — manage members, resources, payments
+occupant  — tenant / resident; read access
 ```
 
-Or similarly:
+`isManagingAgent: boolean` on a membership — gives an operator owner-equivalent write rights.
 
-```text
-src/modules/persta/properties/
-  persta-properties.module.ts
-  persta-properties.controller.ts
-  persta-properties.service.ts
-  persta-properties.repository.ts
-  dto/
-  schemas/
+System roles on users:
+
 ```
-
-### Preferred internal patterns
-
-* controller
-* service
-* repository
-* DTOs
-* Mongoose schemas
-
-Avoid unnecessary complexity.
-
-Do not introduce CQRS, event buses, or microservice patterns unless explicitly needed.
-
----
-
-## Shared Technical Layer
-
-Shared technical code belongs in:
-
-```text
-src/common/
-  decorators/
-  guards/
-  interceptors/
-  filters/
-  pipes/
-  utils/
-  types/
+user   — standard
+admin  — platform-level access (future)
 ```
-
-Examples:
-
-* auth guards
-* organization context decorators
-* validation helpers
-* shared pipes
-
-### Rule
-
-Business logic must not live in `common`.
-
-Business logic belongs inside `core`, `persta`, or `testa`.
 
 ---
 
 ## Database Design
 
-Database:
+Each service connects to its own MongoDB database via a named Mongoose connection. No service reads another service's database directly.
 
-* MongoDB
-
-Each module owns its own collections.
-
-### Example collections
-
-#### Core
-
-* `users`
-* `organizations`
-* `memberships`
-* `roles`
-* `otp_challenges`
-* `sessions`
-
-#### Persta
-
-* `persta_properties`
-* `persta_blocks`
-* `persta_units`
-* `tenants`
-* `leases`
-* `rent_payments`
-* `maintenance_requests`
-
-#### Testa
-
-* `testa_properties`
-* `testa_blocks`
-* `testa_units`
-* `reservations`
-* `guests`
-* `rates`
-
-### Rule
-
-Do not treat MongoDB as one shared unstructured bucket.
-
-Each module should own its models and data boundaries.
+| Service | Connection name | Env var |
+|---------|----------------|---------|
+| core | `core` | `MONGODB_URI_CORE` |
+| persta | `persta` | `MONGODB_URI_PERSTA` |
+| payments | `payments` | `MONGODB_URI_PAYMENTS` |
+| testa | `testa` | `MONGODB_URI_TESTA` _(planned)_ |
 
 ---
 
-## API Prefix and Route Structure
+## PDF & Document Flow
 
-Global API prefix:
+Documents are **generated in memory, never stored**.
 
-```text
-/api/v1
+**Event-driven** (automatic on state change):
+```
+payments emits payments.payment.recorded
+  → documents fetches full payment via internal HTTP
+  → pdfkit generates receipt in memory as Buffer
+  → documents emits documents.document.generated { pdfBase64, recipientEmail, ... }
+  → notifications sends Brevo email with PDF as base64 attachment
 ```
 
-### Example routes
-
-#### Auth
-
-```text
-POST /api/v1/auth/request-otp
-POST /api/v1/auth/verify-otp
-POST /api/v1/auth/logout
-GET  /api/v1/auth/session
+**On-demand** (client-initiated):
 ```
-
-#### Users
-
-```text
-GET /api/v1/users/me
-PATCH /api/v1/users/me
-```
-
-#### Organizations
-
-```text
-POST /api/v1/organizations
-GET  /api/v1/organizations
-GET  /api/v1/organizations/:id
-```
-
-#### Memberships
-
-```text
-POST /api/v1/memberships/invite
-GET  /api/v1/memberships
-PATCH /api/v1/memberships/:id
-```
-
-#### Persta
-
-```text
-POST /api/v1/persta/properties
-GET  /api/v1/persta/properties
-POST /api/v1/persta/blocks
-GET  /api/v1/persta/blocks
-POST /api/v1/persta/units
-GET  /api/v1/persta/units
-POST /api/v1/persta/tenants
-POST /api/v1/persta/leases
-POST /api/v1/persta/rent/payments
-```
-
-#### Testa
-
-```text
-POST /api/v1/testa/properties
-GET  /api/v1/testa/properties
-POST /api/v1/testa/blocks
-POST /api/v1/testa/units
-POST /api/v1/testa/reservations
-POST /api/v1/testa/guests
-POST /api/v1/testa/operations/check-in
-POST /api/v1/testa/operations/check-out
+GET /api/v1/documents/leases/:leaseId/pdf
+GET /api/v1/documents/payments/:paymentId/receipt
+  → documents fetches record via internal HTTP
+  → generates PDF buffer
+  → streams directly to client (Content-Type: application/pdf)
 ```
 
 ---
 
-## Authentication and Session Architecture
+## Payment Model
 
-Authentication uses **email OTP**.
+Payments are vertical-agnostic. Each record carries a `resourceType` + `resourceId` pointer back to the originating vertical:
 
-### Flow
-
-1. user submits email
-2. auth module creates OTP challenge
-3. notifications module sends OTP
-4. user submits OTP
-5. auth verifies challenge
-6. session is created
-7. API returns or sets auth context
-
-### Future production cookie model
-
-Use secure HTTP-only cookies with shared subdomain support.
-
-Recommended cookie settings:
-
-```text
-HttpOnly
-Secure
-SameSite=Lax
-Domain=.tobiira.io
-Path=/
+```ts
+resourceType: string  // 'lease' | 'booking' | 'subscription' | ...
+resourceId:   string  // ID in the originating service
+source:       'manual' | 'platform'
 ```
 
-This allows the ecosystem to support seamless auth across:
-
-* `id.tobiira.io`
-* `persta.tobiira.io`
-* `testa.tobiira.io`
-* future `costa.tobiira.io`
-* future `lumi.tobiira.io`
+Phase 1: staff-recorded manual payments. Phase 2: platform-initiated (M-Pesa, card).
 
 ---
 
-## Notifications Architecture
-
-Notifications are part of core and are a first-class capability.
-
-### Notifications should be used by:
-
-* auth
-* memberships
-* documents
-* future vertical workflows
-
-### Examples
-
-* send OTP
-* send invitation
-* send receipt
-* send alerts
-
-### Rule
-
-Other modules should not send emails directly.
-They should call the notifications service.
-
----
-
-## Documents Architecture
-
-Documents are generated, not user-uploaded.
-
-### Examples
-
-* invoices
-* receipts
-* lease agreements
-* stay confirmations
-
-### Rule
-
-Documents should receive structured data from business modules and render outputs such as PDFs.
-
-The documents module should not become the owner of business data.
-
----
-
-## Coding Principles
-
-* keep modules small and clear
-* prefer explicit naming
-* avoid magic abstractions
-* build only what is needed now
-* keep code production-lean
-* make future extraction possible, but do not optimize for microservices yet
-
-### Current mindset
-
-* structure first
-* simple implementation
-* strong boundaries
-* minimal complexity
-
----
-
-## Initial Build Order
-
-The system should be implemented in this order.
-
-### Phase 1: Core foundation
-
-* auth
-* notifications
-* users
-* organizations
-* memberships
-* roles
-
-### Phase 2: Persta base structure
-
-* properties
-* blocks
-* units
-
-### Phase 3: Persta operations
-
-* tenants
-* leases
-* rent
-* maintenance
-
-### Phase 4: Testa base structure
-
-* properties
-* blocks
-* units
-
-### Phase 5: Testa operations
-
-* reservations
-* guests
-* rates
-* operations
-
----
-
-## Strategic Positioning
-
-Tobiira should be understood as:
-
-**A spatial data and AI platform for operating real-world spaces.**
-
-Persta, Testa, Costa, and Lumi are not only products.
-They are also domain-specific data collection surfaces.
-
-The long-term strategic asset is the structured spatial data generated through operational use.
-
----
-
-## Future Spatial Intelligence Layer
-
-This backend is the start of a future spatial intelligence platform.
-
-Possible future capabilities:
-
-* occupancy analytics
-* pricing intelligence
-* operational automation
-* anomaly detection
-* predictive maintenance
-* service optimization
-* AI assistants for spatial operations
-
-This future layer depends on strong data discipline now.
-
----
-
-## Summary
-
-This backend should be built as:
-
-* NestJS
-* modular monolith
-* MongoDB
-* domain-based module groups
-* clear dependency rules
-* shared core platform
-* strong spatial modeling foundation
-
-Current focus:
-
-* `core`
-* `persta`
-* `testa`
-
-Future-ready for:
-
-* `costa`
-* `lumi`
-* spatial intelligence and AI
+## Shared Library — `@tobiira/common`
 
 ```
+libs/common/src/
+  events/
+    core.events.ts       # CoreEvents, CoreEvent type, event payloads
+    persta.events.ts     # PerstaEvents, PerstaEvent type
+    payments.events.ts   # PaymentsEvents, PaymentsEvent type
+    documents.events.ts  # DocumentsEvents, DocumentGeneratedPayload
+  constants/
+    gateway-headers.ts   # GATEWAY_HEADERS (x-user-id, x-org-id, ...)
+    internal-headers.ts  # INTERNAL_HEADERS (x-internal-api-key)
+    rabbitmq-queues.ts   # RABBITMQ_QUEUES
+  dto/
+    pagination-query.dto.ts
+  types/
+    membership-role.ts
+```
+
+Imported in all apps as `@tobiira/common` via TypeScript path alias.
+
+---
+
+## Build & Deployment
+
+### Local development
+
+```sh
+npm run start:core:dev
+npm run start:persta:dev
+# etc.
+```
+
+### Docker (single Dockerfile, multi-service)
+
+```sh
+docker build --build-arg APP=persta -t tobiira-persta .
+docker-compose up   # brings up all services + mongo + rabbitmq + kong
+```
+
+### Railway (production)
+
+Each service is a separate Railway service. All built from the same repo. Set `APP` build arg per service in Railway settings. Set env vars individually per service (do not share a single `.env`). Use Railway private networking hostnames for inter-service URLs.
+
+### CI — GitHub Actions
+
+```
+push to dev / master
+  → lint (eslint --max-warnings 0)
+  → test (jest --passWithNoTests)
+  → build matrix: [core, notifications, documents, payments, persta] in parallel
+```
+
+---
+
+## Port Reference
+
+```
+Kong proxy    8000   ← all external client traffic
+Kong admin    8001
+core          6000
+notifications 6001   (health endpoint only — no client routes)
+documents     6002
+payments      6003
+persta        7000
+testa         7001   (planned)
+lumi          7002   (planned)
+costa         7003   (planned)
+```
+
+---
+
+## Environment Variables
+
+Each service reads from a shared `.env` (local) or per-service env config (Railway). Key variables:
+
+```
+# Database
+MONGODB_URI_CORE / _PERSTA / _PAYMENTS / _TESTA
+
+# JWT
+JWT_ACCESS_SECRET, JWT_ACCESS_EXPIRES_IN
+JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN
+
+# OTP
+OTP_LENGTH, OTP_TTL_MINUTES
+
+# Email
+BREVO_API_KEY, BREVO_SENDER_EMAIL, BREVO_SENDER_NAME
+
+# RabbitMQ
+RABBITMQ_URL   # use service hostname inside Docker: rabbitmq
+
+# Internal
+INTERNAL_API_KEY
+CORE_SERVICE_URL      # http://core:6000 in Docker
+PERSTA_SERVICE_URL    # http://persta:7000 in Docker
+PAYMENTS_SERVICE_URL  # http://payments:6003 in Docker
+
+# App
+CORS_ORIGINS, APP_PUBLIC_URL, APP_NAME, PORT
+INVITE_TTL_DAYS
 ```

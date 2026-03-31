@@ -1,0 +1,266 @@
+{
+  "info": {
+    "_postman_id": "a7d61c07-4ed4-4b08-8e86-8c80af400f34",
+    "name": "Tobiira API (Local)",
+    "description": "Postman collection for the current Tobiira API foundation (auth + organizations).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:7171" },
+    { "key": "apiPrefix", "value": "/api/v1" },
+    { "key": "email", "value": "joramgranger@gmail.com" },
+    { "key": "otp", "value": "000000" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "profileName", "value": "Joram" },
+    { "key": "profilePhone", "value": "+256700000000" },
+    { "key": "organizationName", "value": "Lugonvu" },
+    { "key": "organizationAddress", "value": "Kampala, Uganda" },
+    { "key": "organizationLat", "value": "0.3476" },
+    { "key": "organizationLng", "value": "32.5825" },
+    { "key": "organizationId", "value": "" },
+    { "key": "spaceId", "value": "" },
+    { "key": "occupancyId", "value": "" },
+    { "key": "actorId", "value": "" },
+    { "key": "activityId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Swagger",
+      "item": [
+        {
+          "name": "Docs UI",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/docs"
+          }
+        },
+        {
+          "name": "Docs JSON",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/docs-json"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Request OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}\n"
+            },
+            "url": "{{baseUrl}}{{apiPrefix}}/auth/request-otp"
+          }
+        },
+        {
+          "name": "Verify OTP (stores tokens)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.accessToken) pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "if (json && json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "pm.test('Has accessToken', () => pm.expect(json.accessToken).to.be.a('string'));",
+                  "pm.test('Has refreshToken', () => pm.expect(json.refreshToken).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"code\": \"{{otp}}\"\n}\n"
+            },
+            "url": "{{baseUrl}}{{apiPrefix}}/auth/verify-otp"
+          }
+        },
+        {
+          "name": "Refresh (rotates refresh token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.accessToken) pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "if (json && json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);",
+                  "pm.test('Has accessToken', () => pm.expect(json.accessToken).to.be.a('string'));",
+                  "pm.test('Has refreshToken', () => pm.expect(json.refreshToken).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}\n"
+            },
+            "url": "{{baseUrl}}{{apiPrefix}}/auth/refresh"
+          }
+        },
+        {
+          "name": "Session (access token)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}{{apiPrefix}}/auth/session"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Organizations",
+      "item": [
+        {
+          "name": "Create Organization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.id) pm.collectionVariables.set('organizationId', json.id);",
+                  "pm.test('Has organizationId', () => pm.expect(json.id).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{organizationName}}\",\n  \"address\": \"{{organizationAddress}}\",\n  \"location\": {\n    \"lat\": {{organizationLat}},\n    \"lng\": {{organizationLng}}\n  }\n}\n"
+            },
+            "url": "{{baseUrl}}{{apiPrefix}}/organizations"
+          }
+        },
+        {
+          "name": "List Organizations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}{{apiPrefix}}/organizations"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}{{apiPrefix}}/users/me"
+          }
+        },
+        {
+          "name": "Update Me",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{profileName}}\",\n  \"phone\": \"{{profilePhone}}\"\n}\n"
+            },
+            "url": "{{baseUrl}}{{apiPrefix}}/users/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Spatial",
+      "item": [
+        {
+          "name": "Create Space (stores spaceId)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json._id) pm.collectionVariables.set('spaceId', json._id);",
+                  "pm.test('Has spaceId', () => pm.expect(json._id).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"spaceType\": \"property\",\n  \"name\": \"Spatial Demo Property\"\n}\n"
+            },
+            "url": "{{baseUrl}}{{apiPrefix}}/organizations/{{organizationId}}/spaces"
+          }
+        },
+        {
+          "name": "List Spaces",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}{{apiPrefix}}/organizations/{{organizationId}}/spaces"
+          }
+        },
+        {
+          "name": "Get Space",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}{{apiPrefix}}/organizations/{{organizationId}}/spaces/{{spaceId}}"
+          }
+        },
+        {
+          "name": "Availability (spaceId)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}{{apiPrefix}}/organizations/{{organizationId}}/spaces/{{spaceId}}/availability?startDate=2026-01-01&endDate=2026-01-10"
+          }
+        },
+        {
+          "name": "List Events",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}{{apiPrefix}}/organizations/{{organizationId}}/events"
+          }
+        }
+      ]
+    }
+  ]
+}
