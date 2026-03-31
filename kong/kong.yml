@@ -1,0 +1,143 @@
+_format_version: "3.0"
+_transform: true
+
+# ─────────────────────────────────────────────
+# Services — one per backend app
+# ─────────────────────────────────────────────
+services:
+  - name: core
+    url: http://core:6000
+    routes:
+      - name: core-auth
+        paths:
+          - /api/v1/auth
+        strip_path: false
+      - name: core-users
+        paths:
+          - /api/v1/users
+        strip_path: false
+      - name: core-organizations
+        paths:
+          - /api/v1/organizations
+        strip_path: false
+      - name: core-memberships
+        paths:
+          - /api/v1/memberships
+        strip_path: false
+
+  - name: persta
+    url: http://persta:7000
+    routes:
+      - name: persta-properties
+        paths:
+          - /api/v1/properties
+        strip_path: false
+      - name: persta-leases
+        paths:
+          - /api/v1/leases
+        strip_path: false
+      - name: persta-tenants
+        paths:
+          - /api/v1/tenants
+        strip_path: false
+
+  - name: payments
+    url: http://payments:6003
+    routes:
+      - name: payments-main
+        paths:
+          - /api/v1/payments
+        strip_path: false
+
+  - name: documents
+    url: http://documents:6002
+    routes:
+      - name: documents-main
+        paths:
+          - /api/v1/documents
+        strip_path: false
+
+# ─────────────────────────────────────────────
+# Plugins — applied globally or per service/route
+# ─────────────────────────────────────────────
+plugins:
+  # ── CORS (global) ──────────────────────────
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Authorization
+        - Content-Type
+        - X-Organization-Id
+      credentials: true
+      max_age: 3600
+
+  # ── Rate limiting (global) ─────────────────
+  - name: rate-limiting
+    config:
+      minute: 120
+      policy: local
+
+  # ── JWT validation (applies to all routes except /auth) ──
+  # Auth routes are public — they issue the JWT
+  # All other routes require a valid JWT
+  - name: jwt
+    service: core
+    route: core-users
+    config:
+      claims_to_verify:
+        - exp
+
+  - name: jwt
+    service: core
+    route: core-organizations
+    config:
+      claims_to_verify:
+        - exp
+
+  - name: jwt
+    service: core
+    route: core-memberships
+    config:
+      claims_to_verify:
+        - exp
+
+  # ── Header injection (persta, payments, documents) ──
+  # After JWT validation Kong injects x-user-id and x-user-email from the JWT sub/email claims
+  # x-org-id comes from the X-Organization-Id header the frontend sends
+
+  - name: request-transformer
+    service: persta
+    config:
+      add:
+        headers:
+          - "x-user-id:$(jwt.sub)"
+          - "x-user-email:$(jwt.email)"
+          - "x-org-id:$(headers.x-organization-id)"
+
+  - name: request-transformer
+    service: payments
+    config:
+      add:
+        headers:
+          - "x-user-id:$(jwt.sub)"
+          - "x-user-email:$(jwt.email)"
+          - "x-org-id:$(headers.x-organization-id)"
+
+  - name: request-transformer
+    service: documents
+    config:
+      add:
+        headers:
+          - "x-user-id:$(jwt.sub)"
+          - "x-user-email:$(jwt.email)"
+          - "x-org-id:$(headers.x-organization-id)"

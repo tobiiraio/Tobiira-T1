@@ -21,9 +21,10 @@ Copy the example and update values as needed:
 cp .env.example .env
 ```
 
-Mongo connections (3):
+Mongo connections (4):
 
 - `MONGODB_URI_CORE` (core / default connection)
+- `MONGODB_URI_SPATIAL` (named connection: `spatialDB`)
 - `MONGODB_URI_PERSTA` (named connection: `persta`)
 - `MONGODB_URI_TESTA` (named connection: `testa`)
 
