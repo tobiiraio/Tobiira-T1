@@ -4,7 +4,7 @@ export const DocumentsEvents = {
 
 export type DocumentsEvent = (typeof DocumentsEvents)[keyof typeof DocumentsEvents];
 
-export type DocumentGeneratedPayload = {
+export interface DocumentGeneratedPayload {
   documentType: 'receipt' | 'lease' | 'other';
   // PDF content as base64 — no storage; notifications service attaches it directly to the email
   pdfBase64: string;
@@ -12,4 +12,4 @@ export type DocumentGeneratedPayload = {
   recipientName?: string;
   organizationName: string;
   metadata: Record<string, string>;
-};
+}

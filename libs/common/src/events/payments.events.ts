@@ -7,7 +7,7 @@ export type PaymentsEvent = (typeof PaymentsEvents)[keyof typeof PaymentsEvents]
 
 // --- Payloads ---
 
-export type PaymentRecordedPayload = {
+export interface PaymentRecordedPayload {
   paymentId: string;
   organizationId: string;
   resourceType: string;
@@ -22,9 +22,9 @@ export type PaymentRecordedPayload = {
   periodFrom?: string;
   periodTo?: string;
   paidAt: string;
-};
+}
 
-export type PaymentVoidedPayload = {
+export interface PaymentVoidedPayload {
   paymentId: string;
   organizationId: string;
   resourceType: string;
@@ -33,4 +33,4 @@ export type PaymentVoidedPayload = {
   payerEmail: string;
   amount: number;
   currency: string;
-};
+}
